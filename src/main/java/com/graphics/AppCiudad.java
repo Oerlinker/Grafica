@@ -1,10 +1,8 @@
 package com.graphics;
 
-import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -40,10 +38,10 @@ import static org.lwjgl.opengl.GL20.glCreateShader;
 import static org.lwjgl.opengl.GL20.glDeleteProgram;
 import static org.lwjgl.opengl.GL20.glDeleteShader;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glGetProgrami;
 import static org.lwjgl.opengl.GL20.glGetProgramInfoLog;
-import static org.lwjgl.opengl.GL20.glGetShaderi;
+import static org.lwjgl.opengl.GL20.glGetProgrami;
 import static org.lwjgl.opengl.GL20.glGetShaderInfoLog;
+import static org.lwjgl.opengl.GL20.glGetShaderi;
 import static org.lwjgl.opengl.GL20.glGetUniformLocation;
 import static org.lwjgl.opengl.GL20.glLinkProgram;
 import static org.lwjgl.opengl.GL20.glShaderSource;
@@ -57,62 +55,76 @@ import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class AppCiudad {
-    private long ventana;
+    protected long ventana;
     private int programa;
     private int vao;
     private int vbo;
-    private int ancho = 1100;
-    private int alto = 760;
+    protected int ancho = 1100;
+    protected int alto = 760;
 
-    // Angulo inicial de la camara de la ciudad
+    protected static final float LIMITE = 55;
+    protected static final float CELDA = 10;
+    private static final int MAX_FAROLAS = 20;
+    private static final int MAX_SEMAFOROS = 10;
+
     private float orbita = 0.6f;
-
-    // Cambiar el angulo o la vista del mapa
-    private boolean vistaMapa = false;
-
-    // Distancia del origen a cada borde
-    private static final float LIMITE = 35;
-
-    // Ancho y profundidad de cada celda del mapa
-    private static final float CELDA = 10;
-
-    // Zoom de la camara: valores mayores acercan la vista a la ciudad
     private float zoom = 1.0f;
+    private float alturaCamara = 55;
     private static final float ZOOM_MIN = 0.4f;
     private static final float ZOOM_MAX = 3.0f;
     private static final float VELOCIDAD_ZOOM = 1.25f;
-
-    // Altura de la camara sobre la ciudad, controlada con arriba/abajo
-    private float alturaCamara = 55;
     private static final float ALTURA_MIN = 15;
     private static final float ALTURA_MAX = 120;
     private static final float VELOCIDAD_ALTURA = 25f;
-
-    // Velocidad angular de la orbita (radianes por segundo)
     private static final float VELOCIDAD_ORBITA = 1.0f;
-
-    // Posicion en X del auto que recorre la calle central; reaparece al llegar al borde
-    private float autoPosicion = -LIMITE;
-    private static final float VELOCIDAD_AUTO = 6f;
 
     private final Map<String, Integer> uniforms = new HashMap<>();
 
-    private static final int[][] MAPA = {
-            { 0, 0, 0, 0, 0, 0, 0 },
-            { 0, 1, 0, 1, 0, 1, 0 },
-            { 0, 0, 0, 0, 0, 0, 0 },
-            { 0, 2, 0, 1, 0, 1, 0 },
-            { 0, 0, 0, 0, 0, 0, 0 },
-            { 0, 1, 0, 3, 0, 1, 0 },
-            { 0, 0, 0, 0, 0, 0, 0 }
-
+    protected static final int[][] MAPA = {
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        { 0, 1, 0, 1, 0, 3, 0, 2, 0, 1, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        { 0, 2, 0, 1, 0, 1, 0, 1, 0, 3, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        { 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        { 0, 1, 0, 2, 0, 1, 0, 1, 0, 2, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        { 0, 3, 0, 1, 0, 2, 0, 1, 0, 1, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     };
 
-    // Organizar las tres fases de la aplicación y limpiar en caso ocurra un error
+    protected float autoX = 0;
+    protected float autoZ = -50;
+    protected float autoAngulo = 0;
+    protected boolean farosEncendidos = false;
+
+    protected boolean modoNoche = false;
+    protected float transicionDiaNoche = 0.0f;
+
+    private final float[][] farolaPosiciones = calcularFarolas();
+    private int farolasCount;
+
+    private float[][] semaforoPosiciones;
+    private int[] semaforoEjes;
+    private float[] semaforoTiempos;
+    private int[] semaforoFases;
+    private int semaforosCount;
+
+    private boolean minimapaVisible = true;
+
+    protected static final int NUM_NPCS = 8;
+    protected float[] npcX = new float[NUM_NPCS];
+    protected float[] npcZ = new float[NUM_NPCS];
+    private int[] npcDir = new int[NUM_NPCS];
+    private float[] npcVelBase = new float[NUM_NPCS];
+    private float[][] npcColores = new float[NUM_NPCS][3];
+    private int npcTick = 0;
+
+    // ===================== Ciclo de vida ===================
+
     public void run() {
-        // Preparamos mensajes de error en la consola
         GLFWErrorCallback errores = GLFWErrorCallback.createPrint(System.err);
-        // Instamos el manejador de errores en GLFW
         errores.set();
         try {
             iniciar();
@@ -124,189 +136,58 @@ public class AppCiudad {
         }
     }
 
-    // Configurar GLFW y OpenGL igual que las clases de App
     private void iniciar() {
         if (!GLFW.glfwInit()) {
             throw new IllegalStateException("No se pudo inicializar GLFW");
         }
 
-        // Reestablece todas las opciones por defecto
         GLFW.glfwDefaultWindowHints();
-
-        // Ocultar la ventana al principio; la mostrar recien cuando OpenGL este listo
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-        // Permitir que el usuario pueda redimensionar la pantalla
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE);
-        // Queremos que use la version de OpenGL 3.3
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
-        // Solo funciones modernas de OpenGL (evitar compatibilidad con codigo muy
-        // antiguo)
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
-        // MacOS hay que reactivar para usar el core profile
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
 
-        // Creamos la ventana: ancho, alto, tiitulo, monitor(0 = ventana normal),
-        // ventana para compartir
         ventana = GLFW.glfwCreateWindow(ancho, alto,
-                "Ciudad | Izq/Der: orbitar | Arriba/Abajo: altura | Rueda o +/-: zoom | M: minimapa | Esc: salir", 0,
-                0);
+            "Ciudad | Izq/Der: orbitar | Arriba/Abajo: altura | +/-: zoom | N: noche | M: minimapa | Esc: salir", 0, 0);
 
-        // Decir que todas las ordenes de OPENGL que ejecutamos a partir de ahora
-        // se aplique a esta venta
         GLFW.glfwMakeContextCurrent(ventana);
-
-        // Sincronizar el dibujo con el monitor (1 = esperar al siguiente refresco)
-        // Evitamos el "tearing" (imagen partida)
         GLFW.glfwSwapInterval(1);
-        // hacer visible la ventana
         GLFW.glfwShowWindow(ventana);
-
-        // Carga en java las funciones de OpenGl
-        // LWJGL necesita este paso para enlazar las llamadas de Java con la GPU
         GL.createCapabilities();
-
-        // Hace que las superficie cercana oculten a las lejanas
         glEnable(GL_DEPTH_TEST);
 
-        // Registramos la funcion del evento del teclado para cerrar la ventana
-        glfwSetKeyCallback(ventana, (ventanaEvento, key, scancode, action, mods) -> {
+        glfwSetKeyCallback(ventana, (v, key, scancode, action, mods) -> {
             if (action == GLFW_PRESS) {
                 tecla(key);
             }
         });
 
-        // Registramos la rueda del mouse para controlar el zoom de la camara
-        glfwSetScrollCallback(ventana, (ventanaEvento, xoffset, yoffset) -> {
+        glfwSetScrollCallback(ventana, (v, xoffset, yoffset) -> {
             zoom += (float) yoffset * 0.10f;
-            zoom = clamp(zoom, ZOOM_MIN, ZOOM_MAX);
+            zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom));
         });
 
+        inicializarSemaforos();
+        inicializarNPCs();
         crearPrograma();
         crearCubo();
     }
 
-    // Compila los shaders, los enlaza en un programa y libera los objetos temporales
-    private void crearPrograma() {
-        int vertice = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertice, vertexShader());
-        glCompileShader(vertice);
-        comprobarShader(vertice, "Vertex");
-
-        int fragmento = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmento, fragmentShader());
-        glCompileShader(fragmento);
-        comprobarShader(fragmento, "Fragment");
-
-        programa = glCreateProgram();
-        glAttachShader(programa, vertice);
-        glAttachShader(programa, fragmento);
-        glLinkProgram(programa);
-
-        if (glGetProgrami(programa, GL_LINK_STATUS) == GL_FALSE) {
-            throw new IllegalStateException("Error al enlazar programa: " + glGetProgramInfoLog(programa));
-        }
-
-        // Los shaders ya quedaron copiados dentro del programa, no hacen falta mas
-        glDeleteShader(vertice);
-        glDeleteShader(fragmento);
-    }
-
-    private void comprobarShader(int shader, String tipo) {
-        if (glGetShaderi(shader, GL_COMPILE_STATUS) == GL_FALSE) {
-            throw new IllegalStateException(tipo + " shader: " + glGetShaderInfoLog(shader));
-        }
-    }
-
-    // Genera un cubo unitario (centrado en el origen, lado 1) con su normal por cada cara
-    private void crearCubo() {
-        float[] vertices = {
-                // posicion            // normal
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-
-                 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-        };
-
-        vao = glGenVertexArrays();
-        glBindVertexArray(vao);
-
-        vbo = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-        FloatBuffer buffer = BufferUtils.createFloatBuffer(vertices.length);
-        buffer.put(vertices).flip();
-        glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
-
-        int stride = 6 * Float.BYTES;
-        // Posicion: 3 floats en el atributo 0
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0);
-        glEnableVertexAttribArray(0);
-        // Normal: 3 floats en el atributo 1, despues de la posicion
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, 3L * Float.BYTES);
-        glEnableVertexAttribArray(1);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
-
     private void loop() {
-        // Guardamos el instante inicial para calcular el tiempo entre cuadros
         double tiempoAnterior = glfwGetTime();
-        // Cuenta los cuadros dibujados para la comprobación
         int cuadros = 0;
-        // Cero permite jugar; otro valor limita el arranque de prueba
         int maxCuadros = Integer.getInteger("demo.frames", 0);
-        // Reserva espacio para que GLFW escriba el ancho en pixeles
         int[] anchoReal = new int[1];
-        // Reserva espacio para qie GLFW escriba el alto en pixeles
         int[] altoReal = new int[1];
 
         while (!glfwWindowShouldClose(ventana)) {
-            // Procesa el teclado, redimensionamiento y boton de cierre
             glfwPollEvents();
-            // Consulta el tiempo actual en segundos
             double tiempoActual = glfwGetTime();
             float deltaTime = (float) Math.min(tiempoActual - tiempoAnterior, 0.05);
             tiempoAnterior = tiempoActual;
-            procesarInput(deltaTime);
+            actualizar(deltaTime);
             glfwGetFramebufferSize(ventana, anchoReal, altoReal);
             ancho = anchoReal[0];
             alto = altoReal[0];
@@ -322,15 +203,9 @@ public class AppCiudad {
     }
 
     private void limpiar() {
-        if (programa != 0) {
-            glDeleteProgram(programa);
-        }
-        if (vbo != 0) {
-            glDeleteBuffers(vbo);
-        }
-        if (vao != 0) {
-            glDeleteVertexArrays(vao);
-        }
+        if (programa != 0) glDeleteProgram(programa);
+        if (vbo != 0) glDeleteBuffers(vbo);
+        if (vao != 0) glDeleteVertexArrays(vao);
         if (ventana != 0) {
             Callbacks.glfwFreeCallbacks(ventana);
             glfwDestroyWindow(ventana);
@@ -338,64 +213,59 @@ public class AppCiudad {
         glfwTerminate();
     }
 
-    // ===================== Teclas y camaras ===================
+    // ===================== Teclas ===================
 
-    /** Atiende las acciones de una sola pulsación */
-    private void tecla(int key) {
-        if (key == GLFW_KEY_ESCAPE) {
-            glfwSetWindowShouldClose(ventana, true);
-        }
-        if (key == GLFW_KEY_M) {
-            vistaMapa = !vistaMapa; // Alterna entre la vista 3D y el minimapa
-        }
+    protected void tecla(int key) {
+        if (key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(ventana, true);
+        if (key == GLFW_KEY_N) modoNoche = !modoNoche;
+        if (key == GLFW_KEY_M) minimapaVisible = !minimapaVisible;
     }
 
-    private boolean pulsada(int key) {
+    protected boolean pulsada(int key) {
         return glfwGetKey(ventana, key) == GLFW_PRESS;
     }
 
-    private float clamp(float valor, float min, float max) {
-        return Math.max(min, Math.min(max, valor));
-    }
+    // ===================== Actualizar ===================
 
-    /** Mueve y hace zoom con la camara alrededor de la ciudad usando el teclado */
-    private void procesarInput(float deltaTime) {
+    protected void actualizar(float deltaTime) {
         float pasoOrbita = VELOCIDAD_ORBITA * deltaTime;
-        if (pulsada(GLFW_KEY_LEFT)) {
-            orbita -= pasoOrbita; // Reducimos el angulo
-        }
-
-        if (pulsada(GLFW_KEY_RIGHT)) {
-            orbita += pasoOrbita; // Aumentamos el angulo
-        }
+        if (pulsada(GLFW_KEY_LEFT)) orbita -= pasoOrbita;
+        if (pulsada(GLFW_KEY_RIGHT)) orbita += pasoOrbita;
 
         float pasoAltura = VELOCIDAD_ALTURA * deltaTime;
-        if (pulsada(GLFW_KEY_UP)) {
-            alturaCamara += pasoAltura; // Subimos la camara
-        }
-        if (pulsada(GLFW_KEY_DOWN)) {
-            alturaCamara -= pasoAltura; // Bajamos la camara
-        }
-        alturaCamara = clamp(alturaCamara, ALTURA_MIN, ALTURA_MAX);
+        if (pulsada(GLFW_KEY_UP)) alturaCamara += pasoAltura;
+        if (pulsada(GLFW_KEY_DOWN)) alturaCamara -= pasoAltura;
+        alturaCamara = Math.max(ALTURA_MIN, Math.min(ALTURA_MAX, alturaCamara));
 
         float pasoZoom = VELOCIDAD_ZOOM * deltaTime;
-        if (pulsada(GLFW_KEY_KP_ADD) || pulsada(GLFW_KEY_EQUAL)) {
-            zoom += pasoZoom;
-        }
-        if (pulsada(GLFW_KEY_KP_SUBTRACT) || pulsada(GLFW_KEY_MINUS)) {
-            zoom -= pasoZoom;
-        }
-        zoom = clamp(zoom, ZOOM_MIN, ZOOM_MAX);
+        if (pulsada(GLFW_KEY_KP_ADD) || pulsada(GLFW_KEY_EQUAL)) zoom += pasoZoom;
+        if (pulsada(GLFW_KEY_KP_SUBTRACT) || pulsada(GLFW_KEY_MINUS)) zoom -= pasoZoom;
+        zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom));
 
-        autoPosicion += VELOCIDAD_AUTO * deltaTime;
-        if (autoPosicion > LIMITE) {
-            autoPosicion = -LIMITE; // Reaparece en el extremo opuesto de la calle
+        float objetivo = modoNoche ? 1.0f : 0.0f;
+        float velocidadTransicion = 0.25f;
+        if (transicionDiaNoche < objetivo) {
+            transicionDiaNoche = Math.min(objetivo, transicionDiaNoche + velocidadTransicion * deltaTime);
+        } else if (transicionDiaNoche > objetivo) {
+            transicionDiaNoche = Math.max(objetivo, transicionDiaNoche - velocidadTransicion * deltaTime);
+        }
+
+        actualizarNPCs(deltaTime);
+
+        float[] duraciones = { 5.0f, 2.0f, 5.0f };
+        for (int i = 0; i < semaforosCount; i++) {
+            semaforoTiempos[i] += deltaTime;
+            if (semaforoTiempos[i] >= duraciones[semaforoFases[i]]) {
+                semaforoTiempos[i] -= duraciones[semaforoFases[i]];
+                semaforoFases[i] = (semaforoFases[i] + 1) % 3;
+            }
         }
     }
 
-    private void configurarCamara() {
-        // Un zoom mayor acerca la camara: dividimos el radio base entre el zoom
-        float radio = 65 / zoom;
+    // ===================== Camara orbital ===================
+
+    protected void configurarCamara() {
+        float radio = 90 / zoom;
         float camaraX = (float) Math.sin(orbita) * radio;
         float camaraZ = (float) Math.cos(orbita) * radio;
 
@@ -404,129 +274,524 @@ public class AppCiudad {
         decimal("uAspecto", (float) ancho / alto);
     }
 
-    // Envia una luz solar fija: direccion, color y un poco de luz ambiental
+    // ===================== Luces ===================
+
     private void prepararLuces() {
-        vector("uLuzDir", 0.35f, 0.8f, 0.45f);
-        vector("uLuzColor", 1.0f, 0.96f, 0.88f);
-        vector("uAmbiente", 0.35f, 0.35f, 0.38f);
+        decimal("uModoNoche", transicionDiaNoche);
+        float ambR = 0.9f - 0.65f * transicionDiaNoche;
+        float ambG = 0.9f - 0.6f * transicionDiaNoche;
+        float ambB = 0.9f - 0.55f * transicionDiaNoche;
+        vector("uLuzAmbiente", ambR, ambG, ambB);
+
+        entero("uFarolasCount", farolasCount);
+        for (int i = 0; i < farolasCount; i++) {
+            vector("uFarolas[" + i + "]", farolaPosiciones[i][0], farolaPosiciones[i][1], farolaPosiciones[i][2]);
+        }
+
+        entero("uFarosEncendidos", farosEncendidos ? 1 : 0);
+        float cos = (float) Math.cos(autoAngulo);
+        float sin = (float) Math.sin(autoAngulo);
+        float izqX = autoX + sin * 1.2f + cos * 0.4f;
+        float izqZ = autoZ + cos * 1.2f - sin * 0.4f;
+        float derX = autoX + sin * 1.2f - cos * 0.4f;
+        float derZ = autoZ + cos * 1.2f + sin * 0.4f;
+        float dirX = (float) Math.sin(autoAngulo);
+        float dirZ = (float) Math.cos(autoAngulo);
+        vector("uFarosPos[0]", izqX, 0.6f, izqZ);
+        vector("uFarosPos[1]", derX, 0.6f, derZ);
+        vector("uFarosDir[0]", dirX, -0.15f, dirZ);
+        vector("uFarosDir[1]", dirX, -0.15f, dirZ);
+
+        entero("uSemaforosCount", semaforosCount);
+        for (int i = 0; i < semaforosCount; i++) {
+            vector("uSemaforos[" + i + "]", semaforoPosiciones[i][0], 3.5f, semaforoPosiciones[i][1]);
+            float sr = 0, sg = 0, sb = 0;
+            switch (semaforoFases[i]) {
+                case 0: sg = 1.0f; sr = 0.1f; sb = 0.2f; break;
+                case 1: sr = 1.0f; sg = 0.9f; sb = 0.1f; break;
+                case 2: sr = 1.0f; sg = 0.1f; sb = 0.1f; break;
+            }
+            vector("uSemaforosColor[" + i + "]", sr, sg, sb);
+        }
     }
 
-    // ===================== Ciudad a partir de la matriz ===================
-    private float centro(int indice) {
+    // ===================== Farolas: calcular posiciones ===================
+
+    private static float[][] calcularFarolas() {
+        java.util.List<float[]> lista = new java.util.ArrayList<>();
+        for (int fila = 0; fila < 11; fila += 2) {
+            for (int col = 0; col < 11; col += 2) {
+                if ((fila + col) % 4 == 0) {
+                    float x = -55 + 10 * (col + 0.5f);
+                    float z = -55 + 10 * (fila + 0.5f);
+                    lista.add(new float[] { x, 5.0f, z });
+                }
+            }
+        }
+        return lista.toArray(new float[0][]);
+    }
+
+    // ===================== Semaforos: inicializar ===================
+
+    private void inicializarSemaforos() {
+        farolasCount = farolaPosiciones.length;
+
+        int[][] intersecciones = {
+            { 2, 2 }, { 2, 6 }, { 4, 4 }, { 6, 2 }, { 6, 8 },
+            { 8, 4 }, { 8, 8 }, { 4, 8 }
+        };
+        semaforosCount = intersecciones.length;
+        semaforoPosiciones = new float[semaforosCount][2];
+        semaforoEjes = new int[semaforosCount];
+        semaforoTiempos = new float[semaforosCount];
+        semaforoFases = new int[semaforosCount];
+
+        for (int i = 0; i < semaforosCount; i++) {
+            int fila = intersecciones[i][0];
+            int col = intersecciones[i][1];
+            semaforoPosiciones[i][0] = -LIMITE + CELDA * (col + 0.5f);
+            semaforoPosiciones[i][1] = -LIMITE + CELDA * (fila + 0.5f);
+            semaforoEjes[i] = i % 2;
+            semaforoFases[i] = (i % 2 == 0) ? 0 : 2;
+            semaforoTiempos[i] = (i * 2.3f) % 12.0f;
+        }
+    }
+
+    // ===================== Dibujar frame ===================
+
+    protected float centro(int indice) {
         return -LIMITE + CELDA * (indice + 0.5f);
     }
 
     private void dibujarFrame() {
+        float fondoR = 0.50f - 0.45f * transicionDiaNoche;
+        float fondoG = 0.70f - 0.60f * transicionDiaNoche;
+        float fondoB = 0.90f - 0.70f * transicionDiaNoche;
+
         glViewport(0, 0, ancho, alto);
-        glClearColor(0.12f, 0.20f, 0.30f, 1);
+        glClearColor(fondoR, fondoG, fondoB, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(programa);
         glBindVertexArray(vao);
-        entero("uMapa", vistaMapa ? 1 : 0);
+        entero("uMapa", 0);
         configurarCamara();
         prepararLuces();
         escena();
+        dibujarVehiculo();
+        dibujarFarolas();
+        dibujarSemaforos();
+        dibujarAutosNPC();
+
+        if (minimapaVisible) {
+            dibujarMinimapa();
+        }
+
         if (glGetError() != GL_NO_ERROR) {
             throw new IllegalStateException("Error OpenGL al dibujar");
         }
     }
 
+    // ===================== Escena principal ===================
+
     private void escena() {
-        caja(0, -0.25f, 0, 70, 0.5f, 70, 0.16f, 0.19f, 0.23f);
+        caja(0, -0.5f, 0, 110, 0.6f, 110, 0.12f, 0.18f, 0.25f);
+
         for (int fila = 0; fila < MAPA.length; fila++) {
             for (int columna = 0; columna < MAPA[fila].length; columna++) {
                 float x = centro(columna);
                 float z = centro(fila);
                 int tipo = MAPA[fila][columna];
-                switch (tipo) {
-                    case 0 -> dibujarMarcasCalle(fila, columna, x, z);
-                    case 1 -> {
-                        caja(x, 0.15f, z, 10, 0.3f, 10, 0.60f, 0.64f, 0.66f);
-                        dibujarManzana(x, z, fila, columna);
+                if (tipo == 0) {
+                    dibujarMarcasCalle(fila, columna, x, z);
+                    dibujarPasosPeatonales(fila, columna, x, z);
+                } else {
+                    caja(x, 0.15f, z, 10, 0.3f, 10, 0.60f, 0.64f, 0.66f);
+                    if (tipo == 1 || tipo == 2) {
+                        float altura;
+                        if (tipo == 1) {
+                            altura = 5 + (fila * 3 + columna * 7) % 9;
+                        } else {
+                            altura = 3 + (fila * 5 + columna * 3) % 4;
+                        }
+                        float rojo = 0.28f + columna * 0.035f;
+                        float azul = 0.48f + fila * 0.02f;
+                        caja(x, altura / 2 + 0.3f, z, 7, altura, 7, rojo, 0.40f, azul);
+                        caja(x, altura + 0.45f, z, 7.3f, 0.3f, 7.3f, 0.20f, 0.26f, 0.32f);
+                        dibujarVentanas(fila, columna, x, z, altura);
+                    } else if (tipo == 3) {
+                        caja(x, 0.32f, z, 9, 0.1f, 9, 0.20f, 0.45f, 0.15f);
+                        dibujarArbolesYBancos(fila, columna, x, z);
                     }
-                    case 2 -> {
-                        caja(x, 0.15f, z, 10, 0.3f, 10, 0.60f, 0.64f, 0.66f);
-                        dibujarParque(x, z);
-                    }
-                    case 3 -> {
-                        caja(x, 0.15f, z, 10, 0.3f, 10, 0.60f, 0.64f, 0.66f);
-                        dibujarEdificio(x, z, fila, columna);
-                    }
-                    default -> throw new IllegalStateException("Tipo de celda desconocido: " + tipo);
                 }
             }
         }
-        // El auto avanza sobre la calle horizontal de la fila 2 (todas sus celdas son calle)
-        dibujarAuto(autoPosicion, centro(2));
     }
 
-    // Manzana residencial: varias casas bajas en vez de una sola torre (celdas tipo 1)
-    private void dibujarManzana(float x, float z, int fila, int columna) {
-        float[] desplazamientoX = { -2.3f, 2.3f, -2.3f, 2.3f };
-        float[] desplazamientoZ = { -2.3f, -2.3f, 2.3f, 2.3f };
-        for (int i = 0; i < desplazamientoX.length; i++) {
-            float altura = 2.5f + (fila + columna + i) % 3;
-            float verde = 0.42f + i * 0.03f;
-            caja(x + desplazamientoX[i], altura / 2 + 0.3f, z + desplazamientoZ[i], 3.6f, altura, 3.6f, 0.65f, verde,
-                    0.45f);
-            caja(x + desplazamientoX[i], altura + 0.45f, z + desplazamientoZ[i], 3.8f, 0.25f, 3.8f, 0.40f, 0.22f,
-                    0.18f);
-        }
-    }
-
-    // Parque con cesped y un par de personas paseando (celdas tipo 2)
-    private void dibujarParque(float x, float z) {
-        caja(x, 0.32f, z, 9, 0.1f, 9, 0.20f, 0.45f, 0.28f);
-        dibujarPersona(x - 2.2f, z - 1.5f, 0.75f, 0.35f, 0.25f);
-        dibujarPersona(x + 1.6f, z + 1.0f, 0.30f, 0.45f, 0.70f);
-    }
-
-    // Edificio alto tipo torre (celdas tipo 3)
-    private void dibujarEdificio(float x, float z, int fila, int columna) {
-        float altura = 5 + (fila * 3 + columna * 7) % 9;
-        float rojo = 0.28f + columna * 0.045f;
-        float azul = 0.48f + fila * 0.025f;
-        caja(x, altura / 2 + 0.3f, z, 7, altura, 7, rojo, 0.40f, azul);
-        caja(x, altura + 0.45f, z, 7.3f, 0.3f, 7.3f, 0.20f, 0.26f, 0.32f);
-    }
-
-    // Auto simple armado con cajas: carroceria, cabina y cuatro llantas
-    private void dibujarAuto(float x, float z) {
-        caja(x, 0.5f, z, 3.4f, 1.0f, 1.7f, 0.75f, 0.15f, 0.15f);
-        caja(x - 0.3f, 1.15f, z, 1.6f, 0.6f, 1.5f, 0.80f, 0.85f, 0.90f);
-        caja(x - 1.1f, 0.25f, z - 0.9f, 0.5f, 0.5f, 0.35f, 0.05f, 0.05f, 0.05f);
-        caja(x - 1.1f, 0.25f, z + 0.9f, 0.5f, 0.5f, 0.35f, 0.05f, 0.05f, 0.05f);
-        caja(x + 1.1f, 0.25f, z - 0.9f, 0.5f, 0.5f, 0.35f, 0.05f, 0.05f, 0.05f);
-        caja(x + 1.1f, 0.25f, z + 0.9f, 0.5f, 0.5f, 0.35f, 0.05f, 0.05f, 0.05f);
-    }
-
-    // Persona simple armada con un cuerpo y una cabeza
-    private void dibujarPersona(float x, float z, float r, float g, float b) {
-        caja(x, 0.9f, z, 0.6f, 1.8f, 0.6f, r, g, b);
-        caja(x, 2.05f, z, 0.5f, 0.5f, 0.5f, 0.92f, 0.78f, 0.65f);
-    }
+    // ===================== Marcas de calle ===================
 
     private void dibujarMarcasCalle(int fila, int columna, float x, float z) {
         if (fila % 2 == 0 && columna % 2 == 1) {
-            for (int desplazamiento = -3; desplazamiento <= 3; desplazamiento += 3) {
-                caja(x + desplazamiento, 0.025f, z, 1.6f, 0.03f, 0.13f, 1, 0.84f, 0.35f);
+            for (int d = -3; d <= 3; d += 3) {
+                caja(x + d, 0.025f, z, 1.6f, 0.03f, 0.13f, 1, 0.84f, 0.35f);
             }
         }
-
         if (columna % 2 == 0 && fila % 2 == 1) {
-            for (int desplazamiento = -3; desplazamiento <= 3; desplazamiento += 3) {
-                caja(x, 0.025f, z + desplazamiento, 0.13f, 0.03f, 0.13f, 1, 0.84f, 0.35f);
+            for (int d = -3; d <= 3; d += 3) {
+                caja(x, 0.025f, z + d, 0.13f, 0.03f, 1.6f, 1, 0.84f, 0.35f);
             }
         }
     }
 
-    // ===================== Dibujar cajas y enviar uniform ===================
-    private void caja(float x, float y, float z, float sx, float sy, float sz, float r, float g, float b) {
+    // ===================== Pasos peatonales ===================
+
+    private void dibujarPasosPeatonales(int fila, int columna, float x, float z) {
+        if (fila % 2 != 0 || columna % 2 != 0) return;
+
+        boolean arribaEsManzana = fila > 0 && MAPA[fila - 1][columna] != 0;
+        boolean abajoEsManzana = fila < 10 && MAPA[fila + 1][columna] != 0;
+        boolean izqEsManzana = columna > 0 && MAPA[fila][columna - 1] != 0;
+        boolean derEsManzana = columna < 10 && MAPA[fila][columna + 1] != 0;
+
+        if (arribaEsManzana) {
+            for (int i = 0; i < 5; i++) {
+                float offset = -2.0f + i * 1.0f;
+                caja(x + offset, 0.01f, z - 4.0f, 0.3f, 0.02f, 2.0f, 0.9f, 0.9f, 0.9f);
+            }
+        }
+        if (abajoEsManzana) {
+            for (int i = 0; i < 5; i++) {
+                float offset = -2.0f + i * 1.0f;
+                caja(x + offset, 0.01f, z + 4.0f, 0.3f, 0.02f, 2.0f, 0.9f, 0.9f, 0.9f);
+            }
+        }
+        if (izqEsManzana) {
+            for (int i = 0; i < 5; i++) {
+                float offset = -2.0f + i * 1.0f;
+                caja(x - 4.0f, 0.01f, z + offset, 2.0f, 0.02f, 0.3f, 0.9f, 0.9f, 0.9f);
+            }
+        }
+        if (derEsManzana) {
+            for (int i = 0; i < 5; i++) {
+                float offset = -2.0f + i * 1.0f;
+                caja(x + 4.0f, 0.01f, z + offset, 2.0f, 0.02f, 0.3f, 0.9f, 0.9f, 0.9f);
+            }
+        }
+    }
+
+    // ===================== Arboles y bancos ===================
+
+    private void dibujarArbolesYBancos(int fila, int columna, float x, float z) {
+        int seed = fila * 17 + columna * 31;
+        int numArboles = 2 + (seed % 3);
+        for (int i = 0; i < numArboles; i++) {
+            float offsetX = ((seed + i * 7) % 5 - 2) * 1.5f;
+            float offsetZ = ((seed + i * 13) % 5 - 2) * 1.5f;
+            float altArbol = 2.0f + ((seed + i * 3) % 3) * 0.7f;
+            float radioC = 1.0f + ((seed + i * 11) % 3) * 0.2f;
+            caja(x + offsetX, altArbol / 2, z + offsetZ, 0.3f, altArbol, 0.3f, 0.35f, 0.25f, 0.1f);
+            caja(x + offsetX, altArbol + radioC * 0.5f, z + offsetZ,
+                 radioC * 2, radioC, radioC * 2, 0.15f, 0.5f, 0.1f);
+        }
+
+        int numBancos = 1 + (seed % 2);
+        for (int i = 0; i < numBancos; i++) {
+            float bx = ((seed + i * 23) % 7 - 3) * 1.0f;
+            float bz = ((seed + i * 29) % 7 - 3) * 1.0f;
+            float anguloB = ((seed + i * 5) % 4) * 1.5708f;
+            cajaGirada(x + bx, 0.35f, z + bz, 1.5f, 0.5f, 0.5f, 0.45f, 0.30f, 0.15f, anguloB);
+        }
+    }
+
+    // ===================== Ventanas en edificios ===================
+
+    private void dibujarVentanas(int fila, int columna, float x, float z, float altura) {
+        int pisos = (int) (altura / 1.5f);
+        if (pisos < 1) pisos = 1;
+        if (pisos > 6) pisos = 6;
+        int ventanasPorFila = 3;
+        int seed = fila * 101 + columna * 53;
+
+        for (int piso = 0; piso < pisos; piso++) {
+            float yVentana = 1.2f + piso * 1.5f;
+            if (yVentana > altura) break;
+
+            for (int v = 0; v < ventanasPorFila; v++) {
+                float offsetV = (v - 1) * 2.0f;
+                boolean iluminada = ((seed + piso * 7 + v * 13) % 10) < 5;
+
+                float vr, vg, vb;
+                if (transicionDiaNoche > 0.5f && iluminada) {
+                    vr = 0.9f; vg = 0.8f; vb = 0.4f;
+                } else if (transicionDiaNoche > 0.5f) {
+                    vr = 0.05f; vg = 0.05f; vb = 0.1f;
+                } else {
+                    vr = 0.3f; vg = 0.35f; vb = 0.45f;
+                }
+
+                caja(x + offsetV, yVentana, z + 3.55f, 0.4f, 0.6f, 0.05f, vr, vg, vb);
+                caja(x + offsetV, yVentana, z - 3.55f, 0.4f, 0.6f, 0.05f, vr, vg, vb);
+                caja(x + 3.55f, yVentana, z + offsetV, 0.05f, 0.6f, 0.4f, vr, vg, vb);
+                caja(x - 3.55f, yVentana, z + offsetV, 0.05f, 0.6f, 0.4f, vr, vg, vb);
+            }
+        }
+    }
+
+    // ===================== Dibujar vehiculo ===================
+
+    private void dibujarVehiculo() {
+        cajaGirada(autoX, 0.45f, autoZ, 1.6f, 0.6f, 3.0f, 0.15f, 0.35f, 0.65f, autoAngulo);
+        cajaGirada(autoX, 0.95f, autoZ, 1.2f, 0.4f, 1.6f, 0.12f, 0.30f, 0.55f, autoAngulo);
+
+        float cos = (float) Math.cos(autoAngulo);
+        float sin = (float) Math.sin(autoAngulo);
+        float[][] ruedas = {
+            { 0.85f, -1.0f }, { -0.85f, -1.0f },
+            { 0.85f, 1.0f }, { -0.85f, 1.0f }
+        };
+        for (float[] r : ruedas) {
+            float rx = autoX + cos * r[0] + sin * r[1];
+            float rz = autoZ - sin * r[0] + cos * r[1];
+            cajaGirada(rx, 0.2f, rz, 0.2f, 0.4f, 0.5f, 0.1f, 0.1f, 0.1f, autoAngulo);
+        }
+
+        if (farosEncendidos) {
+            float izqX = autoX + sin * 1.2f + cos * 0.4f;
+            float izqZ = autoZ + cos * 1.2f - sin * 0.4f;
+            float derX = autoX + sin * 1.2f - cos * 0.4f;
+            float derZ = autoZ + cos * 1.2f + sin * 0.4f;
+            caja(izqX, 0.6f, izqZ, 0.2f, 0.15f, 0.1f, 1.0f, 0.95f, 0.8f);
+            caja(derX, 0.6f, derZ, 0.2f, 0.15f, 0.1f, 1.0f, 0.95f, 0.8f);
+        }
+    }
+
+    // ===================== Dibujar farolas ===================
+
+    private void dibujarFarolas() {
+        for (int i = 0; i < farolasCount; i++) {
+            float fx = farolaPosiciones[i][0];
+            float fz = farolaPosiciones[i][2];
+            caja(fx, 2.5f, fz, 0.2f, 5.0f, 0.2f, 0.2f, 0.2f, 0.2f);
+            caja(fx, 5.2f, fz, 0.6f, 0.3f, 0.6f, 0.3f, 0.3f, 0.25f);
+            if (transicionDiaNoche > 0.3f) {
+                caja(fx, 4.95f, fz, 0.4f, 0.1f, 0.4f, 1.0f, 0.8f, 0.3f);
+            }
+        }
+    }
+
+    // ===================== Dibujar semaforos ===================
+
+    private void dibujarSemaforos() {
+        for (int i = 0; i < semaforosCount; i++) {
+            float sx = semaforoPosiciones[i][0];
+            float sz = semaforoPosiciones[i][1];
+            int fase = semaforoFases[i];
+
+            caja(sx, 1.75f, sz, 0.15f, 3.5f, 0.15f, 0.15f, 0.15f, 0.15f);
+            caja(sx, 3.8f, sz, 0.5f, 1.2f, 0.5f, 0.1f, 0.1f, 0.1f);
+
+            float rBrillo = (fase == 2) ? 1.0f : 0.2f;
+            caja(sx, 4.2f, sz + 0.28f, 0.25f, 0.25f, 0.05f, rBrillo, 0.02f, 0.02f);
+            float aBrillo = (fase == 1) ? 1.0f : 0.2f;
+            caja(sx, 3.8f, sz + 0.28f, 0.25f, 0.25f, 0.05f, aBrillo, aBrillo * 0.9f, 0.02f);
+            float gBrillo = (fase == 0) ? 1.0f : 0.2f;
+            caja(sx, 3.4f, sz + 0.28f, 0.25f, 0.25f, 0.05f, 0.02f, gBrillo, 0.04f);
+        }
+    }
+
+    // ===================== Autos NPC ===================
+
+    private void inicializarNPCs() {
+        int[][] spawns = {
+            { 0, 0, 0 }, { 0, 6, 1 }, { 4, 0, 2 }, { 4, 10, 3 },
+            { 8, 4, 1 }, { 10, 8, 0 }, { 6, 2, 2 }, { 2, 10, 3 }
+        };
+        float[][] palette = {
+            { 0.7f, 0.15f, 0.15f }, { 0.2f, 0.2f, 0.65f }, { 0.6f, 0.55f, 0.1f },
+            { 0.1f, 0.5f, 0.2f }, { 0.55f, 0.55f, 0.55f }, { 0.6f, 0.3f, 0.1f },
+            { 0.8f, 0.8f, 0.8f }, { 0.35f, 0.1f, 0.45f }
+        };
+        for (int i = 0; i < NUM_NPCS; i++) {
+            npcX[i] = centro(spawns[i][1]);
+            npcZ[i] = centro(spawns[i][0]);
+            npcDir[i] = spawns[i][2];
+            npcVelBase[i] = 6.0f + (i % 3) * 2.0f;
+            npcColores[i] = palette[i % palette.length];
+        }
+    }
+
+    private void actualizarNPCs(float dt) {
+        npcTick++;
+        for (int i = 0; i < NUM_NPCS; i++) {
+            float ax = npcX[i];
+            float az = npcZ[i];
+
+            int col = Math.round((ax + LIMITE) / CELDA - 0.5f);
+            int fila = Math.round((az + LIMITE) / CELDA - 0.5f);
+            col = Math.max(0, Math.min(10, col));
+            fila = Math.max(0, Math.min(10, fila));
+            float centroX = centro(col);
+            float centroZ = centro(fila);
+            float distCentro = Math.abs(ax - centroX) + Math.abs(az - centroZ);
+
+            boolean enInterseccion = (fila % 2 == 0 && col % 2 == 0 && distCentro < 0.5f);
+            if (enInterseccion) {
+                int seed = i * 31 + fila * 7 + col * 13 + npcTick / 60;
+                int[] opciones = direccionesValidas(fila, col, npcDir[i]);
+                if (opciones.length > 0) {
+                    npcDir[i] = opciones[Math.abs(seed) % opciones.length];
+                }
+            }
+
+            float dx = 0, dz = 0;
+            switch (npcDir[i]) {
+                case 0: dz = 1; break;
+                case 1: dx = 1; break;
+                case 2: dz = -1; break;
+                case 3: dx = -1; break;
+            }
+
+            float vel = npcVelBase[i];
+
+            if (debeFrenarPorSemaforo(ax, az, npcDir[i])) {
+                vel = 0;
+            }
+
+            float djx = autoX - ax;
+            float djz = autoZ - az;
+            float enFrenteJ = djx * dx + djz * dz;
+            float lateralJ = Math.abs(djx * dz - djz * dx);
+            if (enFrenteJ > 0 && enFrenteJ < 4.0f && lateralJ < 1.5f) {
+                vel = 0;
+            }
+
+            for (int j = 0; j < NUM_NPCS; j++) {
+                if (j == i) continue;
+                float enfrente = (npcX[j] - ax) * dx + (npcZ[j] - az) * dz;
+                if (enfrente > 0.5f && enfrente < 3.0f) {
+                    float lateral = Math.abs((npcX[j] - ax) * dz - (npcZ[j] - az) * dx);
+                    if (lateral < 1.0f) {
+                        vel = 0;
+                    }
+                }
+            }
+
+            float nuevoX = ax + dx * vel * dt;
+            float nuevoZ = az + dz * vel * dt;
+
+            if (nuevoX > LIMITE - 2) { nuevoX = -LIMITE + 3; }
+            if (nuevoX < -LIMITE + 2) { nuevoX = LIMITE - 3; }
+            if (nuevoZ > LIMITE - 2) { nuevoZ = -LIMITE + 3; }
+            if (nuevoZ < -LIMITE + 2) { nuevoZ = LIMITE - 3; }
+
+            npcX[i] = nuevoX;
+            npcZ[i] = nuevoZ;
+        }
+    }
+
+    private int[] direccionesValidas(int fila, int col, int dirActual) {
+        java.util.List<Integer> opciones = new java.util.ArrayList<>();
+        int opuesta = (dirActual + 2) % 4;
+        if (fila + 1 < 11 && MAPA[fila + 1][col] == 0 && 0 != opuesta) opciones.add(0);
+        if (col + 1 < 11 && MAPA[fila][col + 1] == 0 && 1 != opuesta) opciones.add(1);
+        if (fila - 1 >= 0 && MAPA[fila - 1][col] == 0 && 2 != opuesta) opciones.add(2);
+        if (col - 1 >= 0 && MAPA[fila][col - 1] == 0 && 3 != opuesta) opciones.add(3);
+        if (opciones.isEmpty()) {
+            opciones.add(opuesta);
+        }
+        return opciones.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private boolean debeFrenarPorSemaforo(float ax, float az, int dir) {
+        for (int s = 0; s < semaforosCount; s++) {
+            float sx = semaforoPosiciones[s][0];
+            float sz = semaforoPosiciones[s][1];
+            float haciaX = sx - ax;
+            float haciaZ = sz - az;
+            float dx = 0, dz = 0;
+            switch (dir) {
+                case 0: dz = 1; break;
+                case 1: dx = 1; break;
+                case 2: dz = -1; break;
+                case 3: dx = -1; break;
+            }
+            float enfrente = haciaX * dx + haciaZ * dz;
+            if (enfrente < 1.0f || enfrente > 8.0f) continue;
+            float lateral = Math.abs(haciaX * dz - haciaZ * dx);
+            if (lateral > 3.0f) continue;
+            int fase = semaforoFases[s];
+            boolean ejeZ = (dir == 0 || dir == 2);
+            int ejeSemaforo = semaforoEjes[s];
+            if (ejeZ && ejeSemaforo == 0 && fase == 2) return true;
+            if (!ejeZ && ejeSemaforo == 1 && fase == 2) return true;
+            if (ejeZ && ejeSemaforo == 1 && fase == 0) return true;
+            if (!ejeZ && ejeSemaforo == 0 && fase == 0) return true;
+        }
+        return false;
+    }
+
+    private float dist(float x1, float z1, float x2, float z2) {
+        float dx = x1 - x2;
+        float dz = z1 - z2;
+        return (float) Math.sqrt(dx * dx + dz * dz);
+    }
+
+    private void dibujarAutosNPC() {
+        for (int i = 0; i < NUM_NPCS; i++) {
+            float angulo = 0;
+            switch (npcDir[i]) {
+                case 0: angulo = 0; break;
+                case 1: angulo = (float)(-Math.PI / 2); break;
+                case 2: angulo = (float) Math.PI; break;
+                case 3: angulo = (float)(Math.PI / 2); break;
+            }
+            float[] c = npcColores[i];
+            cajaGirada(npcX[i], 0.4f, npcZ[i], 1.4f, 0.5f, 2.6f, c[0], c[1], c[2], angulo);
+            cajaGirada(npcX[i], 0.85f, npcZ[i], 1.0f, 0.35f, 1.4f,
+                       c[0] * 0.85f, c[1] * 0.85f, c[2] * 0.85f, angulo);
+        }
+    }
+
+    // ===================== Minimapa ===================
+
+    private void dibujarMinimapa() {
+        int tamMini = 180;
+        int margen = 10;
+        glViewport(ancho - tamMini - margen, margen, tamMini, tamMini);
+        entero("uMapa", 1);
+
+        caja(0, -0.1f, 0, 112, 0.01f, 112, 0.08f, 0.10f, 0.14f);
+
+        for (int fila = 0; fila < MAPA.length; fila++) {
+            for (int col = 0; col < MAPA[fila].length; col++) {
+                float x = centro(col);
+                float z = centro(fila);
+                int tipo = MAPA[fila][col];
+                float r, g, b;
+                switch (tipo) {
+                    case 1: r = 0.5f; g = 0.5f; b = 0.55f; break;
+                    case 2: r = 0.4f; g = 0.4f; b = 0.45f; break;
+                    case 3: r = 0.2f; g = 0.5f; b = 0.2f; break;
+                    default: r = 0.15f; g = 0.15f; b = 0.2f; break;
+                }
+                caja(x, 0, z, CELDA - 0.5f, 0.01f, CELDA - 0.5f, r, g, b);
+            }
+        }
+
+        cajaGirada(autoX, 0.5f, autoZ, 1.5f, 0.5f, 3.0f, 1.0f, 0.9f, 0.2f, autoAngulo);
+
+        glViewport(0, 0, ancho, alto);
+        entero("uMapa", 0);
+    }
+
+    // ===================== Dibujar cajas ===================
+
+    protected void caja(float x, float y, float z, float sx, float sy, float sz,
+                        float r, float g, float b) {
         cajaGirada(x, y, z, sx, sy, sz, r, g, b, 0);
     }
 
-    private void cajaGirada(float x, float y, float z, float sx, float sy, float sz, float r, float g, float b,
-                            float angulo) {
+    protected void cajaGirada(float x, float y, float z, float sx, float sy, float sz,
+                              float r, float g, float b, float angulo) {
         vector("uPos", x, y, z);
         vector("uEscala", sx, sy, sz);
         vector("uColor", r, g, b);
@@ -534,7 +799,9 @@ public class AppCiudad {
         glDrawArrays(GL_TRIANGLES, 0, 36);
     }
 
-    private int uniform(String nombre) {
+    // ===================== Uniforms ===================
+
+    protected int uniform(String nombre) {
         if (!uniforms.containsKey(nombre)) {
             int ubicacion = glGetUniformLocation(programa, nombre);
             uniforms.put(nombre, ubicacion);
@@ -542,88 +809,213 @@ public class AppCiudad {
         return uniforms.get(nombre);
     }
 
-    private void vector(String nombre, float x, float y, float z) {
+    protected void vector(String nombre, float x, float y, float z) {
         glUniform3f(uniform(nombre), x, y, z);
     }
 
-    private void decimal(String nombre, float valor) {
+    protected void decimal(String nombre, float valor) {
         glUniform1f(uniform(nombre), valor);
     }
 
-    private void entero(String nombre, int valor) {
+    protected void entero(String nombre, int valor) {
         glUniform1i(uniform(nombre), valor);
     }
 
-    // ===================== Shaders: Codigo que se ejecuta en la GPU
-    // ===================
+    // ===================== Shaders ===================
+
     private String vertexShader() {
         return """
-                    #version 330 core // Seleccionamos GLSL 3.30
-                    layout (location = 0) in vec3 aPos; // Leemos la posicion local del vertice desde el VBO
-                    layout (location = 1)  in vec3 aNormal; // Leemos la normal de la cara desde el mismo VBO
-                    uniform vec3 uPos; // Recibe el centro e la caja de la ciudad
-                    uniform vec3 uEscala; // Recibe el tamaño de la caja en cada eje
-                    uniform vec3 uOjo; // Recibe la posicion de la camara
-                    uniform vec3 uObjetivo; // Punto que observa la camara
-                    uniform float uGiro; // Recibe el giro del objeto alrededor de Y
-                    uniform float uAspecto; // Recibe la relacion del ancho y alto de la imagen
-                    uniform int uMapa; // Seleccionamos la perspectiva (0, 1)
-                    out vec3 vMundo; // La posicion mundial al shader de fragmentos
-                    out vec3 vNormal; // Enviamos la normal transformada par ala iluminacion
+            #version 330 core
+            layout (location = 0) in vec3 aPos;
+            layout (location = 1) in vec3 aNormal;
+            uniform vec3 uPos;
+            uniform vec3 uEscala;
+            uniform vec3 uOjo;
+            uniform vec3 uObjetivo;
+            uniform float uGiro;
+            uniform float uAspecto;
+            uniform int uMapa;
+            out vec3 vMundo;
+            out vec3 vNormal;
 
-                    void main() {
-                        float coseno = cos(uGiro); // Calculamos el coseno del giro del objeto
-                        float seno = sin(uGiro);
-                        mat3 giro = mat3(
-                            coseno, 0.0,    -seno,
-                            0.0,    1.0,    0.0,
-                            seno,   0.0,    coseno
-                        );
-                        vMundo = giro * (aPos * uEscala) + uPos; // Escalar, firar y trasladar el vertice al mundo
-                        vNormal = normalize(giro * (aNormal / uEscala)); // Corregimos la normal con la inversa transpuesta de la escala y giro
+            void main() {
+                float coseno = cos(uGiro);
+                float seno = sin(uGiro);
+                mat3 giro = mat3(
+                    coseno, 0.0, -seno,
+                    0.0,    1.0,  0.0,
+                    seno,   0.0,  coseno
+                );
+                vMundo = giro * (aPos * uEscala) + uPos;
+                vNormal = normalize(giro * (aNormal / uEscala));
 
-                        if (uMapa == 1) { //Esta rama se usa al dibujar el minimapa
-                            float pantallaX = vMundo.x / 37.0;
-                            float pantallaY = vMundo.z / 37.0;
-                            float profundidad = -vMundo.y / 100.0;
-                            gl_Position = vec4(pantallaX, pantallaY, profundidad, 1.0);
-                        } else { // La escena principal utilizando la camara como perspectiva
-                            vec3 frente = normalize(uObjetivo - uOjo); // Calcular la direccion hacia lo que mira la camara
-                            vec3 derecha = normalize(cross(frente, vec3(0.0, 1.0, 0.0))); // Obtenemos el eje horizontal de la camra
-                            vec3 arriba = cross(derecha, frente); // Obtenemos el eje vertical
-                            vec3 diferencia = vMundo - uOjo; // Trasladamos el origen del mundo hasta la camara
-                            float vistaX = dot(diferencia, derecha);
-                            float vistaY = dot(diferencia, arriba);
-                            float vistaZ = -dot(diferencia, frente);
-                            float factor = 1.0 / tan(radians(55.0) * 0.5); // Convertimos el campo visual (55 grados) en escala de perspectiva
-                            float cerca = 0.1;
-                            float lejos = 250.0;
-                            float clipX = vistaX * factor / uAspecto;
-                            float clipY = vistaY * factor;
-                            float clipZ = (lejos + cerca) / (cerca - lejos) * vistaZ;
-                            clipZ += 2.0 * lejos * cerca / (cerca - lejos); // añadir el constante de profundidad
-                            gl_Position = vec4(clipX, clipY, clipZ, -vistaZ);
-                        }
-                    }
-                """;
+                if (uMapa == 1) {
+                    float pantallaX = vMundo.x / 57.0;
+                    float pantallaY = vMundo.z / 57.0;
+                    float profundidad = -vMundo.y / 100.0;
+                    gl_Position = vec4(pantallaX, pantallaY, profundidad, 1.0);
+                } else {
+                    vec3 frente = normalize(uObjetivo - uOjo);
+                    vec3 derecha = normalize(cross(frente, vec3(0.0, 1.0, 0.0)));
+                    vec3 arriba = cross(derecha, frente);
+                    vec3 diferencia = vMundo - uOjo;
+                    float vistaX = dot(diferencia, derecha);
+                    float vistaY = dot(diferencia, arriba);
+                    float vistaZ = -dot(diferencia, frente);
+                    float factor = 1.0 / tan(radians(55.0) * 0.5);
+                    float cerca = 0.1;
+                    float lejos = 250.0;
+                    float clipX = vistaX * factor / uAspecto;
+                    float clipY = vistaY * factor;
+                    float clipZ = (lejos + cerca) / (cerca - lejos) * vistaZ;
+                    clipZ += 2.0 * lejos * cerca / (cerca - lejos);
+                    gl_Position = vec4(clipX, clipY, clipZ, -vistaZ);
+                }
+            }
+            """;
     }
 
     private String fragmentShader() {
         return """
-                    #version 330 core
-                    in vec3 vNormal; // Normal interpolada que llega del vertex shader
-                    uniform vec3 uColor;
-                    uniform vec3 uLuzDir; // Direccion hacia la luz
-                    uniform vec3 uLuzColor; // Color/intensidad de la luz
-                    uniform vec3 uAmbiente; // Luz base que ilumina todo por igual
-                    out vec4 color;
-                    void main() {
-                        vec3 normal = normalize(vNormal);
-                        float difusa = max(dot(normal, normalize(uLuzDir)), 0.0);
-                        vec3 iluminacion = uAmbiente + uLuzColor * difusa;
-                        color = vec4(uColor * iluminacion, 1.0);
+            #version 330 core
+            in vec3 vMundo;
+            in vec3 vNormal;
+            uniform vec3 uColor;
+            uniform float uModoNoche;
+            uniform vec3 uLuzAmbiente;
+
+            #define MAX_FAROLAS 20
+            #define MAX_SEMAFOROS 10
+            uniform vec3 uFarolas[MAX_FAROLAS];
+            uniform int uFarolasCount;
+
+            uniform vec3 uFarosPos[2];
+            uniform vec3 uFarosDir[2];
+            uniform int uFarosEncendidos;
+
+            uniform vec3 uSemaforos[MAX_SEMAFOROS];
+            uniform vec3 uSemaforosColor[MAX_SEMAFOROS];
+            uniform int uSemaforosCount;
+
+            out vec4 color;
+
+            void main() {
+                vec3 luz = uLuzAmbiente;
+                vec3 normal = normalize(vNormal);
+
+                if (uModoNoche > 0.3) {
+                    float factorNoche = smoothstep(0.3, 0.7, uModoNoche);
+                    for (int i = 0; i < uFarolasCount; i++) {
+                        vec3 delta = vMundo - uFarolas[i];
+                        float dist = length(delta);
+                        float radio = 10.0;
+                        if (dist < radio) {
+                            float brillo = (1.0 - dist / radio) * factorNoche;
+                            luz += vec3(1.0, 0.8, 0.3) * brillo * 0.6;
+                        }
                     }
-                """;
+
+                    for (int i = 0; i < uSemaforosCount; i++) {
+                        vec3 delta = vMundo - uSemaforos[i];
+                        float dist = length(delta);
+                        float radio = 5.0;
+                        if (dist < radio) {
+                            float brillo = (1.0 - dist / radio) * factorNoche * 0.3;
+                            luz += uSemaforosColor[i] * brillo;
+                        }
+                    }
+                }
+
+                if (uFarosEncendidos == 1) {
+                    for (int i = 0; i < 2; i++) {
+                        vec3 hacia = vMundo - uFarosPos[i];
+                        float dist = length(hacia);
+                        float alcance = 20.0;
+                        if (dist < alcance) {
+                            vec3 dirNorm = normalize(uFarosDir[i]);
+                            float cosAngulo = dot(normalize(hacia), dirNorm);
+                            float conoLimite = cos(radians(30.0));
+                            if (cosAngulo > conoLimite) {
+                                float factorCono = (cosAngulo - conoLimite) / (1.0 - conoLimite);
+                                float factorDist = 1.0 - dist / alcance;
+                                float brillo = factorCono * factorDist;
+                                luz += vec3(1.0, 0.95, 0.8) * brillo * 0.8;
+                            }
+                        }
+                    }
+                }
+
+                float difuso = max(dot(normal, normalize(vec3(0.3, 1.0, 0.2))), 0.0);
+                float factorDifuso = mix(0.3, 0.1, uModoNoche);
+                luz += vec3(1.0) * difuso * factorDifuso;
+
+                luz = min(luz, vec3(1.5));
+                color = vec4(uColor * luz, 1.0);
+            }
+            """;
+    }
+
+    // ===================== Compilar y crear programa ===================
+
+    private int compilar(int tipo, String fuente) {
+        int shader = glCreateShader(tipo);
+        glShaderSource(shader, fuente);
+        glCompileShader(shader);
+        if (glGetShaderi(shader, GL_COMPILE_STATUS) == GL_FALSE) {
+            String error = glGetShaderInfoLog(shader);
+            glDeleteShader(shader);
+            throw new IllegalStateException(error);
+        }
+        return shader;
+    }
+
+    private void crearPrograma() {
+        int shaderVertices = compilar(GL_VERTEX_SHADER, vertexShader());
+        int shaderFragmentos = 0;
+        try {
+            shaderFragmentos = compilar(GL_FRAGMENT_SHADER, fragmentShader());
+            programa = glCreateProgram();
+            glAttachShader(programa, shaderVertices);
+            glAttachShader(programa, shaderFragmentos);
+            glLinkProgram(programa);
+            if (glGetProgrami(programa, GL_LINK_STATUS) == GL_FALSE) {
+                throw new IllegalStateException(glGetProgramInfoLog(programa));
+            }
+        } finally {
+            glDeleteShader(shaderVertices);
+            if (shaderFragmentos != 0) glDeleteShader(shaderFragmentos);
+        }
+    }
+
+    // ===================== Geometria del cubo ===================
+
+    private void crearCubo() {
+        float[] vertices = {
+            -0.5f,-0.5f, 0.5f, 0, 0, 1,  0.5f,-0.5f, 0.5f, 0, 0, 1,  0.5f, 0.5f, 0.5f, 0, 0, 1,
+             0.5f, 0.5f, 0.5f, 0, 0, 1, -0.5f, 0.5f, 0.5f, 0, 0, 1, -0.5f,-0.5f, 0.5f, 0, 0, 1,
+            -0.5f,-0.5f,-0.5f, 0, 0,-1, -0.5f, 0.5f,-0.5f, 0, 0,-1,  0.5f, 0.5f,-0.5f, 0, 0,-1,
+             0.5f, 0.5f,-0.5f, 0, 0,-1,  0.5f,-0.5f,-0.5f, 0, 0,-1, -0.5f,-0.5f,-0.5f, 0, 0,-1,
+            -0.5f, 0.5f, 0.5f,-1, 0, 0, -0.5f, 0.5f,-0.5f,-1, 0, 0, -0.5f,-0.5f,-0.5f,-1, 0, 0,
+            -0.5f,-0.5f,-0.5f,-1, 0, 0, -0.5f,-0.5f, 0.5f,-1, 0, 0, -0.5f, 0.5f, 0.5f,-1, 0, 0,
+             0.5f, 0.5f, 0.5f, 1, 0, 0,  0.5f,-0.5f, 0.5f, 1, 0, 0,  0.5f,-0.5f,-0.5f, 1, 0, 0,
+             0.5f,-0.5f,-0.5f, 1, 0, 0,  0.5f, 0.5f,-0.5f, 1, 0, 0,  0.5f, 0.5f, 0.5f, 1, 0, 0,
+            -0.5f, 0.5f,-0.5f, 0, 1, 0, -0.5f, 0.5f, 0.5f, 0, 1, 0,  0.5f, 0.5f, 0.5f, 0, 1, 0,
+             0.5f, 0.5f, 0.5f, 0, 1, 0,  0.5f, 0.5f,-0.5f, 0, 1, 0, -0.5f, 0.5f,-0.5f, 0, 1, 0,
+            -0.5f,-0.5f,-0.5f, 0,-1, 0,  0.5f,-0.5f,-0.5f, 0,-1, 0,  0.5f,-0.5f, 0.5f, 0,-1, 0,
+             0.5f,-0.5f, 0.5f, 0,-1, 0, -0.5f,-0.5f, 0.5f, 0,-1, 0, -0.5f,-0.5f,-0.5f, 0,-1, 0,
+        };
+        vao = glGenVertexArrays();
+        glBindVertexArray(vao);
+        vbo = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
+        int stride = 6 * Float.BYTES;
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0L);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, 3L * Float.BYTES);
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
     }
 
     public static void main(String[] args) {
