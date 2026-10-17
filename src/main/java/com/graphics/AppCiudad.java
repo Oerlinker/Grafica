@@ -7,6 +7,7 @@ import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
+
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
@@ -64,8 +65,7 @@ public class AppCiudad {
 
     protected static final float LIMITE = 55;
     protected static final float CELDA = 10;
-    private static final int MAX_FAROLAS = 20;
-    private static final int MAX_SEMAFOROS = 10;
+
 
     private float orbita = 0.6f;
     private float zoom = 1.0f;
@@ -81,17 +81,17 @@ public class AppCiudad {
     private final Map<String, Integer> uniforms = new HashMap<>();
 
     protected static final int[][] MAPA = {
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 1, 0, 1, 0, 3, 0, 2, 0, 1, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 2, 0, 1, 0, 1, 0, 1, 0, 3, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 1, 0, 2, 0, 1, 0, 1, 0, 2, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-        { 0, 3, 0, 1, 0, 2, 0, 1, 0, 1, 0 },
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 1, 0, 1, 0, 3, 0, 2, 0, 1, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 2, 0, 1, 0, 1, 0, 1, 0, 3, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 1, 0, 2, 0, 1, 0, 1, 0, 2, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 3, 0, 1, 0, 2, 0, 1, 0, 1, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     };
 
     protected float autoX = 0;
@@ -150,7 +150,7 @@ public class AppCiudad {
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
 
         ventana = GLFW.glfwCreateWindow(ancho, alto,
-            "Ciudad | Izq/Der: orbitar | Arriba/Abajo: altura | +/-: zoom | N: noche | M: minimapa | Esc: salir", 0, 0);
+                "Ciudad | Izq/Der: orbitar | Arriba/Abajo: altura | +/-: zoom | N: noche | M: minimapa | Esc: salir", 0, 0);
 
         GLFW.glfwMakeContextCurrent(ventana);
         GLFW.glfwSwapInterval(1);
@@ -252,7 +252,7 @@ public class AppCiudad {
 
         actualizarNPCs(deltaTime);
 
-        float[] duraciones = { 5.0f, 2.0f, 5.0f };
+        float[] duraciones = {5.0f, 2.0f, 5.0f};
         for (int i = 0; i < semaforosCount; i++) {
             semaforoTiempos[i] += deltaTime;
             if (semaforoTiempos[i] >= duraciones[semaforoFases[i]]) {
@@ -307,9 +307,21 @@ public class AppCiudad {
             vector("uSemaforos[" + i + "]", semaforoPosiciones[i][0], 3.5f, semaforoPosiciones[i][1]);
             float sr = 0, sg = 0, sb = 0;
             switch (semaforoFases[i]) {
-                case 0: sg = 1.0f; sr = 0.1f; sb = 0.2f; break;
-                case 1: sr = 1.0f; sg = 0.9f; sb = 0.1f; break;
-                case 2: sr = 1.0f; sg = 0.1f; sb = 0.1f; break;
+                case 0:
+                    sg = 1.0f;
+                    sr = 0.1f;
+                    sb = 0.2f;
+                    break;
+                case 1:
+                    sr = 1.0f;
+                    sg = 0.9f;
+                    sb = 0.1f;
+                    break;
+                case 2:
+                    sr = 1.0f;
+                    sg = 0.1f;
+                    sb = 0.1f;
+                    break;
             }
             vector("uSemaforosColor[" + i + "]", sr, sg, sb);
         }
@@ -324,7 +336,7 @@ public class AppCiudad {
                 if ((fila + col) % 4 == 0) {
                     float x = -55 + 10 * (col + 0.5f);
                     float z = -55 + 10 * (fila + 0.5f);
-                    lista.add(new float[] { x, 5.0f, z });
+                    lista.add(new float[]{x, 5.0f, z});
                 }
             }
         }
@@ -337,8 +349,8 @@ public class AppCiudad {
         farolasCount = farolaPosiciones.length;
 
         int[][] intersecciones = {
-            { 2, 2 }, { 2, 6 }, { 4, 4 }, { 6, 2 }, { 6, 8 },
-            { 8, 4 }, { 8, 8 }, { 4, 8 }
+                {2, 2}, {2, 6}, {4, 4}, {6, 2}, {6, 8},
+                {8, 4}, {8, 8}, {4, 8}
         };
         semaforosCount = intersecciones.length;
         semaforoPosiciones = new float[semaforosCount][2];
@@ -490,7 +502,7 @@ public class AppCiudad {
             float radioC = 1.0f + ((seed + i * 11) % 3) * 0.2f;
             caja(x + offsetX, altArbol / 2, z + offsetZ, 0.3f, altArbol, 0.3f, 0.35f, 0.25f, 0.1f);
             caja(x + offsetX, altArbol + radioC * 0.5f, z + offsetZ,
-                 radioC * 2, radioC, radioC * 2, 0.15f, 0.5f, 0.1f);
+                    radioC * 2, radioC, radioC * 2, 0.15f, 0.5f, 0.1f);
         }
 
         int numBancos = 1 + (seed % 2);
@@ -521,11 +533,17 @@ public class AppCiudad {
 
                 float vr, vg, vb;
                 if (transicionDiaNoche > 0.5f && iluminada) {
-                    vr = 0.9f; vg = 0.8f; vb = 0.4f;
+                    vr = 0.9f;
+                    vg = 0.8f;
+                    vb = 0.4f;
                 } else if (transicionDiaNoche > 0.5f) {
-                    vr = 0.05f; vg = 0.05f; vb = 0.1f;
+                    vr = 0.05f;
+                    vg = 0.05f;
+                    vb = 0.1f;
                 } else {
-                    vr = 0.3f; vg = 0.35f; vb = 0.45f;
+                    vr = 0.3f;
+                    vg = 0.35f;
+                    vb = 0.45f;
                 }
 
                 caja(x + offsetV, yVentana, z + 3.55f, 0.4f, 0.6f, 0.05f, vr, vg, vb);
@@ -538,15 +556,15 @@ public class AppCiudad {
 
     // ===================== Dibujar vehiculo ===================
 
-    private void dibujarVehiculo() {
+    protected void dibujarVehiculo() {
         cajaGirada(autoX, 0.45f, autoZ, 1.6f, 0.6f, 3.0f, 0.15f, 0.35f, 0.65f, autoAngulo);
         cajaGirada(autoX, 0.95f, autoZ, 1.2f, 0.4f, 1.6f, 0.12f, 0.30f, 0.55f, autoAngulo);
 
         float cos = (float) Math.cos(autoAngulo);
         float sin = (float) Math.sin(autoAngulo);
         float[][] ruedas = {
-            { 0.85f, -1.0f }, { -0.85f, -1.0f },
-            { 0.85f, 1.0f }, { -0.85f, 1.0f }
+                {0.85f, -1.0f}, {-0.85f, -1.0f},
+                {0.85f, 1.0f}, {-0.85f, 1.0f}
         };
         for (float[] r : ruedas) {
             float rx = autoX + cos * r[0] + sin * r[1];
@@ -602,13 +620,13 @@ public class AppCiudad {
 
     private void inicializarNPCs() {
         int[][] spawns = {
-            { 0, 0, 0 }, { 0, 6, 1 }, { 4, 0, 2 }, { 4, 10, 3 },
-            { 8, 4, 1 }, { 10, 8, 0 }, { 6, 2, 2 }, { 2, 10, 3 }
+                {0, 0, 0}, {0, 6, 1}, {4, 0, 2}, {4, 10, 3},
+                {8, 4, 1}, {10, 8, 0}, {6, 2, 2}, {2, 10, 3}
         };
         float[][] palette = {
-            { 0.7f, 0.15f, 0.15f }, { 0.2f, 0.2f, 0.65f }, { 0.6f, 0.55f, 0.1f },
-            { 0.1f, 0.5f, 0.2f }, { 0.55f, 0.55f, 0.55f }, { 0.6f, 0.3f, 0.1f },
-            { 0.8f, 0.8f, 0.8f }, { 0.35f, 0.1f, 0.45f }
+                {0.7f, 0.15f, 0.15f}, {0.2f, 0.2f, 0.65f}, {0.6f, 0.55f, 0.1f},
+                {0.1f, 0.5f, 0.2f}, {0.55f, 0.55f, 0.55f}, {0.6f, 0.3f, 0.1f},
+                {0.8f, 0.8f, 0.8f}, {0.35f, 0.1f, 0.45f}
         };
         for (int i = 0; i < NUM_NPCS; i++) {
             npcX[i] = centro(spawns[i][1]);
@@ -644,10 +662,18 @@ public class AppCiudad {
 
             float dx = 0, dz = 0;
             switch (npcDir[i]) {
-                case 0: dz = 1; break;
-                case 1: dx = 1; break;
-                case 2: dz = -1; break;
-                case 3: dx = -1; break;
+                case 0:
+                    dz = 1;
+                    break;
+                case 1:
+                    dx = 1;
+                    break;
+                case 2:
+                    dz = -1;
+                    break;
+                case 3:
+                    dx = -1;
+                    break;
             }
 
             float vel = npcVelBase[i];
@@ -678,10 +704,18 @@ public class AppCiudad {
             float nuevoX = ax + dx * vel * dt;
             float nuevoZ = az + dz * vel * dt;
 
-            if (nuevoX > LIMITE - 2) { nuevoX = -LIMITE + 3; }
-            if (nuevoX < -LIMITE + 2) { nuevoX = LIMITE - 3; }
-            if (nuevoZ > LIMITE - 2) { nuevoZ = -LIMITE + 3; }
-            if (nuevoZ < -LIMITE + 2) { nuevoZ = LIMITE - 3; }
+            if (nuevoX > LIMITE - 2) {
+                nuevoX = -LIMITE + 3;
+            }
+            if (nuevoX < -LIMITE + 2) {
+                nuevoX = LIMITE - 3;
+            }
+            if (nuevoZ > LIMITE - 2) {
+                nuevoZ = -LIMITE + 3;
+            }
+            if (nuevoZ < -LIMITE + 2) {
+                nuevoZ = LIMITE - 3;
+            }
 
             npcX[i] = nuevoX;
             npcZ[i] = nuevoZ;
@@ -709,10 +743,18 @@ public class AppCiudad {
             float haciaZ = sz - az;
             float dx = 0, dz = 0;
             switch (dir) {
-                case 0: dz = 1; break;
-                case 1: dx = 1; break;
-                case 2: dz = -1; break;
-                case 3: dx = -1; break;
+                case 0:
+                    dz = 1;
+                    break;
+                case 1:
+                    dx = 1;
+                    break;
+                case 2:
+                    dz = -1;
+                    break;
+                case 3:
+                    dx = -1;
+                    break;
             }
             float enfrente = haciaX * dx + haciaZ * dz;
             if (enfrente < 1.0f || enfrente > 8.0f) continue;
@@ -739,15 +781,23 @@ public class AppCiudad {
         for (int i = 0; i < NUM_NPCS; i++) {
             float angulo = 0;
             switch (npcDir[i]) {
-                case 0: angulo = 0; break;
-                case 1: angulo = (float)(-Math.PI / 2); break;
-                case 2: angulo = (float) Math.PI; break;
-                case 3: angulo = (float)(Math.PI / 2); break;
+                case 0:
+                    angulo = 0;
+                    break;
+                case 1:
+                    angulo = (float) (-Math.PI / 2);
+                    break;
+                case 2:
+                    angulo = (float) Math.PI;
+                    break;
+                case 3:
+                    angulo = (float) (Math.PI / 2);
+                    break;
             }
             float[] c = npcColores[i];
             cajaGirada(npcX[i], 0.4f, npcZ[i], 1.4f, 0.5f, 2.6f, c[0], c[1], c[2], angulo);
             cajaGirada(npcX[i], 0.85f, npcZ[i], 1.0f, 0.35f, 1.4f,
-                       c[0] * 0.85f, c[1] * 0.85f, c[2] * 0.85f, angulo);
+                    c[0] * 0.85f, c[1] * 0.85f, c[2] * 0.85f, angulo);
         }
     }
 
@@ -768,10 +818,26 @@ public class AppCiudad {
                 int tipo = MAPA[fila][col];
                 float r, g, b;
                 switch (tipo) {
-                    case 1: r = 0.5f; g = 0.5f; b = 0.55f; break;
-                    case 2: r = 0.4f; g = 0.4f; b = 0.45f; break;
-                    case 3: r = 0.2f; g = 0.5f; b = 0.2f; break;
-                    default: r = 0.15f; g = 0.15f; b = 0.2f; break;
+                    case 1:
+                        r = 0.5f;
+                        g = 0.5f;
+                        b = 0.55f;
+                        break;
+                    case 2:
+                        r = 0.4f;
+                        g = 0.4f;
+                        b = 0.45f;
+                        break;
+                    case 3:
+                        r = 0.2f;
+                        g = 0.5f;
+                        b = 0.2f;
+                        break;
+                    default:
+                        r = 0.15f;
+                        g = 0.15f;
+                        b = 0.2f;
+                        break;
                 }
                 caja(x, 0, z, CELDA - 0.5f, 0.01f, CELDA - 0.5f, r, g, b);
             }
@@ -825,134 +891,134 @@ public class AppCiudad {
 
     private String vertexShader() {
         return """
-            #version 330 core
-            layout (location = 0) in vec3 aPos;
-            layout (location = 1) in vec3 aNormal;
-            uniform vec3 uPos;
-            uniform vec3 uEscala;
-            uniform vec3 uOjo;
-            uniform vec3 uObjetivo;
-            uniform float uGiro;
-            uniform float uAspecto;
-            uniform int uMapa;
-            out vec3 vMundo;
-            out vec3 vNormal;
-
-            void main() {
-                float coseno = cos(uGiro);
-                float seno = sin(uGiro);
-                mat3 giro = mat3(
-                    coseno, 0.0, -seno,
-                    0.0,    1.0,  0.0,
-                    seno,   0.0,  coseno
-                );
-                vMundo = giro * (aPos * uEscala) + uPos;
-                vNormal = normalize(giro * (aNormal / uEscala));
-
-                if (uMapa == 1) {
-                    float pantallaX = vMundo.x / 57.0;
-                    float pantallaY = vMundo.z / 57.0;
-                    float profundidad = -vMundo.y / 100.0;
-                    gl_Position = vec4(pantallaX, pantallaY, profundidad, 1.0);
-                } else {
-                    vec3 frente = normalize(uObjetivo - uOjo);
-                    vec3 derecha = normalize(cross(frente, vec3(0.0, 1.0, 0.0)));
-                    vec3 arriba = cross(derecha, frente);
-                    vec3 diferencia = vMundo - uOjo;
-                    float vistaX = dot(diferencia, derecha);
-                    float vistaY = dot(diferencia, arriba);
-                    float vistaZ = -dot(diferencia, frente);
-                    float factor = 1.0 / tan(radians(55.0) * 0.5);
-                    float cerca = 0.1;
-                    float lejos = 250.0;
-                    float clipX = vistaX * factor / uAspecto;
-                    float clipY = vistaY * factor;
-                    float clipZ = (lejos + cerca) / (cerca - lejos) * vistaZ;
-                    clipZ += 2.0 * lejos * cerca / (cerca - lejos);
-                    gl_Position = vec4(clipX, clipY, clipZ, -vistaZ);
+                #version 330 core
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec3 aNormal;
+                uniform vec3 uPos;
+                uniform vec3 uEscala;
+                uniform vec3 uOjo;
+                uniform vec3 uObjetivo;
+                uniform float uGiro;
+                uniform float uAspecto;
+                uniform int uMapa;
+                out vec3 vMundo;
+                out vec3 vNormal;
+                
+                void main() {
+                    float coseno = cos(uGiro);
+                    float seno = sin(uGiro);
+                    mat3 giro = mat3(
+                        coseno, 0.0, -seno,
+                        0.0,    1.0,  0.0,
+                        seno,   0.0,  coseno
+                    );
+                    vMundo = giro * (aPos * uEscala) + uPos;
+                    vNormal = normalize(giro * (aNormal / uEscala));
+                
+                    if (uMapa == 1) {
+                        float pantallaX = vMundo.x / 57.0;
+                        float pantallaY = vMundo.z / 57.0;
+                        float profundidad = -vMundo.y / 100.0;
+                        gl_Position = vec4(pantallaX, pantallaY, profundidad, 1.0);
+                    } else {
+                        vec3 frente = normalize(uObjetivo - uOjo);
+                        vec3 derecha = normalize(cross(frente, vec3(0.0, 1.0, 0.0)));
+                        vec3 arriba = cross(derecha, frente);
+                        vec3 diferencia = vMundo - uOjo;
+                        float vistaX = dot(diferencia, derecha);
+                        float vistaY = dot(diferencia, arriba);
+                        float vistaZ = -dot(diferencia, frente);
+                        float factor = 1.0 / tan(radians(55.0) * 0.5);
+                        float cerca = 0.1;
+                        float lejos = 250.0;
+                        float clipX = vistaX * factor / uAspecto;
+                        float clipY = vistaY * factor;
+                        float clipZ = (lejos + cerca) / (cerca - lejos) * vistaZ;
+                        clipZ += 2.0 * lejos * cerca / (cerca - lejos);
+                        gl_Position = vec4(clipX, clipY, clipZ, -vistaZ);
+                    }
                 }
-            }
-            """;
+                """;
     }
 
     private String fragmentShader() {
         return """
-            #version 330 core
-            in vec3 vMundo;
-            in vec3 vNormal;
-            uniform vec3 uColor;
-            uniform float uModoNoche;
-            uniform vec3 uLuzAmbiente;
-
-            #define MAX_FAROLAS 20
-            #define MAX_SEMAFOROS 10
-            uniform vec3 uFarolas[MAX_FAROLAS];
-            uniform int uFarolasCount;
-
-            uniform vec3 uFarosPos[2];
-            uniform vec3 uFarosDir[2];
-            uniform int uFarosEncendidos;
-
-            uniform vec3 uSemaforos[MAX_SEMAFOROS];
-            uniform vec3 uSemaforosColor[MAX_SEMAFOROS];
-            uniform int uSemaforosCount;
-
-            out vec4 color;
-
-            void main() {
-                vec3 luz = uLuzAmbiente;
-                vec3 normal = normalize(vNormal);
-
-                if (uModoNoche > 0.3) {
-                    float factorNoche = smoothstep(0.3, 0.7, uModoNoche);
-                    for (int i = 0; i < uFarolasCount; i++) {
-                        vec3 delta = vMundo - uFarolas[i];
-                        float dist = length(delta);
-                        float radio = 10.0;
-                        if (dist < radio) {
-                            float brillo = (1.0 - dist / radio) * factorNoche;
-                            luz += vec3(1.0, 0.8, 0.3) * brillo * 0.6;
+                #version 330 core
+                in vec3 vMundo;
+                in vec3 vNormal;
+                uniform vec3 uColor;
+                uniform float uModoNoche;
+                uniform vec3 uLuzAmbiente;
+                
+                #define MAX_FAROLAS 20
+                #define MAX_SEMAFOROS 10
+                uniform vec3 uFarolas[MAX_FAROLAS];
+                uniform int uFarolasCount;
+                
+                uniform vec3 uFarosPos[2];
+                uniform vec3 uFarosDir[2];
+                uniform int uFarosEncendidos;
+                
+                uniform vec3 uSemaforos[MAX_SEMAFOROS];
+                uniform vec3 uSemaforosColor[MAX_SEMAFOROS];
+                uniform int uSemaforosCount;
+                
+                out vec4 color;
+                
+                void main() {
+                    vec3 luz = uLuzAmbiente;
+                    vec3 normal = normalize(vNormal);
+                
+                    if (uModoNoche > 0.3) {
+                        float factorNoche = smoothstep(0.3, 0.7, uModoNoche);
+                        for (int i = 0; i < uFarolasCount; i++) {
+                            vec3 delta = vMundo - uFarolas[i];
+                            float dist = length(delta);
+                            float radio = 10.0;
+                            if (dist < radio) {
+                                float brillo = (1.0 - dist / radio) * factorNoche;
+                                luz += vec3(1.0, 0.8, 0.3) * brillo * 0.6;
+                            }
                         }
-                    }
-
-                    for (int i = 0; i < uSemaforosCount; i++) {
-                        vec3 delta = vMundo - uSemaforos[i];
-                        float dist = length(delta);
-                        float radio = 5.0;
-                        if (dist < radio) {
-                            float brillo = (1.0 - dist / radio) * factorNoche * 0.3;
-                            luz += uSemaforosColor[i] * brillo;
-                        }
-                    }
-                }
-
-                if (uFarosEncendidos == 1) {
-                    for (int i = 0; i < 2; i++) {
-                        vec3 hacia = vMundo - uFarosPos[i];
-                        float dist = length(hacia);
-                        float alcance = 20.0;
-                        if (dist < alcance) {
-                            vec3 dirNorm = normalize(uFarosDir[i]);
-                            float cosAngulo = dot(normalize(hacia), dirNorm);
-                            float conoLimite = cos(radians(30.0));
-                            if (cosAngulo > conoLimite) {
-                                float factorCono = (cosAngulo - conoLimite) / (1.0 - conoLimite);
-                                float factorDist = 1.0 - dist / alcance;
-                                float brillo = factorCono * factorDist;
-                                luz += vec3(1.0, 0.95, 0.8) * brillo * 0.8;
+                
+                        for (int i = 0; i < uSemaforosCount; i++) {
+                            vec3 delta = vMundo - uSemaforos[i];
+                            float dist = length(delta);
+                            float radio = 5.0;
+                            if (dist < radio) {
+                                float brillo = (1.0 - dist / radio) * factorNoche * 0.3;
+                                luz += uSemaforosColor[i] * brillo;
                             }
                         }
                     }
+                
+                    if (uFarosEncendidos == 1) {
+                        for (int i = 0; i < 2; i++) {
+                            vec3 hacia = vMundo - uFarosPos[i];
+                            float dist = length(hacia);
+                            float alcance = 20.0;
+                            if (dist < alcance) {
+                                vec3 dirNorm = normalize(uFarosDir[i]);
+                                float cosAngulo = dot(normalize(hacia), dirNorm);
+                                float conoLimite = cos(radians(30.0));
+                                if (cosAngulo > conoLimite) {
+                                    float factorCono = (cosAngulo - conoLimite) / (1.0 - conoLimite);
+                                    float factorDist = 1.0 - dist / alcance;
+                                    float brillo = factorCono * factorDist;
+                                    luz += vec3(1.0, 0.95, 0.8) * brillo * 0.8;
+                                }
+                            }
+                        }
+                    }
+                
+                    float difuso = max(dot(normal, normalize(vec3(0.3, 1.0, 0.2))), 0.0);
+                    float factorDifuso = mix(0.3, 0.1, uModoNoche);
+                    luz += vec3(1.0) * difuso * factorDifuso;
+                
+                    luz = min(luz, vec3(1.5));
+                    color = vec4(uColor * luz, 1.0);
                 }
-
-                float difuso = max(dot(normal, normalize(vec3(0.3, 1.0, 0.2))), 0.0);
-                float factorDifuso = mix(0.3, 0.1, uModoNoche);
-                luz += vec3(1.0) * difuso * factorDifuso;
-
-                luz = min(luz, vec3(1.5));
-                color = vec4(uColor * luz, 1.0);
-            }
-            """;
+                """;
     }
 
     // ===================== Compilar y crear programa ===================
@@ -991,18 +1057,18 @@ public class AppCiudad {
 
     private void crearCubo() {
         float[] vertices = {
-            -0.5f,-0.5f, 0.5f, 0, 0, 1,  0.5f,-0.5f, 0.5f, 0, 0, 1,  0.5f, 0.5f, 0.5f, 0, 0, 1,
-             0.5f, 0.5f, 0.5f, 0, 0, 1, -0.5f, 0.5f, 0.5f, 0, 0, 1, -0.5f,-0.5f, 0.5f, 0, 0, 1,
-            -0.5f,-0.5f,-0.5f, 0, 0,-1, -0.5f, 0.5f,-0.5f, 0, 0,-1,  0.5f, 0.5f,-0.5f, 0, 0,-1,
-             0.5f, 0.5f,-0.5f, 0, 0,-1,  0.5f,-0.5f,-0.5f, 0, 0,-1, -0.5f,-0.5f,-0.5f, 0, 0,-1,
-            -0.5f, 0.5f, 0.5f,-1, 0, 0, -0.5f, 0.5f,-0.5f,-1, 0, 0, -0.5f,-0.5f,-0.5f,-1, 0, 0,
-            -0.5f,-0.5f,-0.5f,-1, 0, 0, -0.5f,-0.5f, 0.5f,-1, 0, 0, -0.5f, 0.5f, 0.5f,-1, 0, 0,
-             0.5f, 0.5f, 0.5f, 1, 0, 0,  0.5f,-0.5f, 0.5f, 1, 0, 0,  0.5f,-0.5f,-0.5f, 1, 0, 0,
-             0.5f,-0.5f,-0.5f, 1, 0, 0,  0.5f, 0.5f,-0.5f, 1, 0, 0,  0.5f, 0.5f, 0.5f, 1, 0, 0,
-            -0.5f, 0.5f,-0.5f, 0, 1, 0, -0.5f, 0.5f, 0.5f, 0, 1, 0,  0.5f, 0.5f, 0.5f, 0, 1, 0,
-             0.5f, 0.5f, 0.5f, 0, 1, 0,  0.5f, 0.5f,-0.5f, 0, 1, 0, -0.5f, 0.5f,-0.5f, 0, 1, 0,
-            -0.5f,-0.5f,-0.5f, 0,-1, 0,  0.5f,-0.5f,-0.5f, 0,-1, 0,  0.5f,-0.5f, 0.5f, 0,-1, 0,
-             0.5f,-0.5f, 0.5f, 0,-1, 0, -0.5f,-0.5f, 0.5f, 0,-1, 0, -0.5f,-0.5f,-0.5f, 0,-1, 0,
+                -0.5f, -0.5f, 0.5f, 0, 0, 1, 0.5f, -0.5f, 0.5f, 0, 0, 1, 0.5f, 0.5f, 0.5f, 0, 0, 1,
+                0.5f, 0.5f, 0.5f, 0, 0, 1, -0.5f, 0.5f, 0.5f, 0, 0, 1, -0.5f, -0.5f, 0.5f, 0, 0, 1,
+                -0.5f, -0.5f, -0.5f, 0, 0, -1, -0.5f, 0.5f, -0.5f, 0, 0, -1, 0.5f, 0.5f, -0.5f, 0, 0, -1,
+                0.5f, 0.5f, -0.5f, 0, 0, -1, 0.5f, -0.5f, -0.5f, 0, 0, -1, -0.5f, -0.5f, -0.5f, 0, 0, -1,
+                -0.5f, 0.5f, 0.5f, -1, 0, 0, -0.5f, 0.5f, -0.5f, -1, 0, 0, -0.5f, -0.5f, -0.5f, -1, 0, 0,
+                -0.5f, -0.5f, -0.5f, -1, 0, 0, -0.5f, -0.5f, 0.5f, -1, 0, 0, -0.5f, 0.5f, 0.5f, -1, 0, 0,
+                0.5f, 0.5f, 0.5f, 1, 0, 0, 0.5f, -0.5f, 0.5f, 1, 0, 0, 0.5f, -0.5f, -0.5f, 1, 0, 0,
+                0.5f, -0.5f, -0.5f, 1, 0, 0, 0.5f, 0.5f, -0.5f, 1, 0, 0, 0.5f, 0.5f, 0.5f, 1, 0, 0,
+                -0.5f, 0.5f, -0.5f, 0, 1, 0, -0.5f, 0.5f, 0.5f, 0, 1, 0, 0.5f, 0.5f, 0.5f, 0, 1, 0,
+                0.5f, 0.5f, 0.5f, 0, 1, 0, 0.5f, 0.5f, -0.5f, 0, 1, 0, -0.5f, 0.5f, -0.5f, 0, 1, 0,
+                -0.5f, -0.5f, -0.5f, 0, -1, 0, 0.5f, -0.5f, -0.5f, 0, -1, 0, 0.5f, -0.5f, 0.5f, 0, -1, 0,
+                0.5f, -0.5f, 0.5f, 0, -1, 0, -0.5f, -0.5f, 0.5f, 0, -1, 0, -0.5f, -0.5f, -0.5f, 0, -1, 0,
         };
         vao = glGenVertexArrays();
         glBindVertexArray(vao);
